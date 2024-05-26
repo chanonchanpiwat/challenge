@@ -15,7 +15,7 @@ type ChargeResponse struct {
 func Charge(client *omise.Client, songpahPa *songphapagenerator.SongPahPa) *ChargeResponse {
 	token, createToken := &omise.Token{}, &operations.CreateToken{
 		ExpirationMonth: songpahPa.ExpMonth,
-		ExpirationYear:  2026,
+		ExpirationYear:  songpahPa.ExpYear,
 		Name:            songpahPa.Name,
 		Number:          songpahPa.CCNumber,
 		SecurityCode:    songpahPa.CVV,
