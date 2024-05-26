@@ -7,7 +7,7 @@ import (
 	"os"
 	"github.com/chanonchanpiwat/challenge.git/cipher"
 	"github.com/chanonchanpiwat/challenge.git/constant"
-	"github.com/chanonchanpiwat/challenge.git/limiter"
+	"github.com/chanonchanpiwat/challenge.git/utils"
 	"github.com/chanonchanpiwat/challenge.git/logger"
 	"github.com/chanonchanpiwat/challenge.git/songphapadonationconsumer"
 	"github.com/chanonchanpiwat/challenge.git/songphapadonator"
@@ -40,20 +40,21 @@ func main() {
 
 	fmt.Println("performing donations...")
 
+	// Set throttle sleep 200 ms
 	songPhaPaChannel := songphapagenerator.GenerateSongPhaPaChannel(done, csv.NewReader(rot128Reader), 200)
 
+	// TO DO: request is an IO bound optimal goroutine have to be tested for multiple factor
 	multiplePipe := make([]<-chan *songphapadonator.ChargeResponse, 20)
 	for i := 0; i < 20; i++ {
 		multiplePipe[i] = songphapadonator.ChargeAPICall(done, songPhaPaChannel, client)
 	}
 
-	donationChargeChannel := limiter.Take(done, limiter.FanIn(done, multiplePipe...), 15)
+	donationChargeChannel := utils.FanIn(done, multiplePipe...)
 
 	donationStat := []*songphapadonator.ChargeResponse{}
 	for item := range donationChargeChannel {
 		donationStat = append(donationStat, item)
 	}
-
 
 	donationResult := songphapadonationconsumer.Consumer(donationStat, 3)
 	totalDonation := donationResult.SuccessAmount + donationResult.FailedAmount
